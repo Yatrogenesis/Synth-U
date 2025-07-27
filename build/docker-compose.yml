@@ -1,0 +1,40 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  dev:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ..:/synth-u
+      - ~/.ssh:/root/.ssh:ro
+      - ~/.gitconfig:/root/.gitconfig:ro
+    ports:
+      - "8000:8000"  # Para debugging/web services
+    environment:
+      - DISPLAY=${DISPLAY}  # Para aplicaciones GUI si es necesario
+    command: /bin/bash
+    tty: true
+    stdin_open: true
+    
+  neo4j:
+    image: neo4j:5.9.0
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    environment:
+      - NEO4J_AUTH=neo4j/synth-u-dev
+    volumes:
+      - neo4j-data:/data
+      
+  redis:
+    image: redis:7.2
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  neo4j-data:
+  redis-data:

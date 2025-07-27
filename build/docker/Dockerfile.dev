@@ -1,0 +1,62 @@
+# Dockerfile.dev
+FROM ubuntu:24.04
+
+# Evitar interacciones durante la instalación
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Instalar dependencias comunes
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    curl \
+    wget \
+    vim \
+    htop \
+    python3 \
+    python3-pip \
+    python3-dev \
+    libssl-dev \
+    pkg-config \
+    cmake \
+    ninja-build
+
+# Setup para cada lenguaje específico
+# 1. Common Lisp (SBCL)
+RUN apt-get install -y sbcl rlwrap
+RUN curl -O https://beta.quicklisp.org/quicklisp.lisp && \
+    sbcl --load quicklisp.lisp --eval '(quicklisp-quickstart:install)' --eval '(ql:add-to-init-file)' --quit
+
+# 2. Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+RUN rustup default stable && \
+    rustup component add rust-src rustfmt clippy
+
+# 3. Python
+RUN pip3 install --upgrade pip && \
+    pip3 install numpy scipy torch pandas matplotlib scikit-learn pytest black flake8
+
+# 4. Go
+RUN wget https://go.dev/dl/go1.21.1.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go1.21.1.linux-amd64.tar.gz && \
+    rm go1.21.1.linux-amd64.tar.gz
+ENV PATH="/usr/local/go/bin:${PATH}"
+
+# 5. C/C++ toolchain
+RUN apt-get install -y clang clang-format clang-tidy
+
+# Herramientas de desarrollo adicionales
+RUN apt-get install -y valgrind gdb lldb
+
+# Limpieza
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Directorio de trabajo
+WORKDIR /synth-u
+
+# Volumen para el código
+VOLUME ["/synth-u"]
+
+# Comando por defecto
+CMD ["/bin/bash"]
